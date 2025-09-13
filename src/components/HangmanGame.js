@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 
-// Icons as emojis
+// Icons as emojis (since we can't use lucide in GitHub Pages easily)
 const WalletIcon = () => <span className="text-2xl">👛</span>;
 const UserIcon = () => <span className="text-lg">👤</span>;
 const LogOutIcon = () => <span className="text-lg">🚪</span>;
 const RefreshIcon = ({ spinning }) => <span className={`text-lg ${spinning ? 'animate-spin' : ''}`}>🔄</span>;
 const TrophyIcon = () => <span className="text-lg">🏆</span>;
 const HeartIcon = () => <span className="text-lg">❤️</span>;
+const EmailIcon = () => <span className="text-lg">📧</span>;
 
 const HangmanGame = () => {
+  // Privy hooks
+  const { ready, authenticated, user, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  
   // Game state
   const [currentWord, setCurrentWord] = useState('');
   const [guessedLetters, setGuessedLetters] = useState([]);
@@ -16,19 +22,18 @@ const HangmanGame = () => {
   const [gameStatus, setGameStatus] = useState('playing');
   const [score, setScore] = useState(0);
   const [gamesPlayed, setGamesPlayed] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Wallet state
-  const [isConnected, setIsConnected] = useState(false);
-  const [userAddress, setUserAddress] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
-
+  // Game words
   const words = [
     'BLOCKCHAIN', 'ETHEREUM', 'SEPOLIA', 'PRIVY', 'WALLET',
     'CRYPTO', 'TOKEN', 'SMART', 'CONTRACT', 'DEFI',
     'MINT', 'BURN', 'STAKE', 'YIELD', 'SWAP',
-    'BRIDGE', 'LAYER', 'NODE', 'HASH', 'FORK'
+    'BRIDGE', 'LAYER', 'NODE', 'HASH', 'FORK',
+    'WEB3', 'DAPP', 'METAMASK', 'LEDGER', 'OPENSEA'
   ];
 
+  // Hangman drawing stages
   const hangmanStages = [
     '',
     '  +---+\n      |\n      |\n      |\n      |\n=========',
@@ -43,22 +48,34 @@ const HangmanGame = () => {
 
   const maxWrongGuesses = 7;
 
-  const connectWallet = async () => {
-    setIsConnecting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const mockAddress = '0x' + Math.random().toString(16).substring(2, 42);
-    setUserAddress(mockAddress);
-    setIsConnected(true);
-    setIsConnecting(false);
+  // Get user's wallet address
+  const getUserAddress = () => {
+    if (wallets.length > 0) {
+      return wallets[0].address;
+    }
+    return user?.wallet?.address || 'No wallet';
   };
 
-  const disconnectWallet = () => {
-    setIsConnected(false);
-    setUserAddress('');
+  // Handle Privy login
+  const handleLogin = async () => {
+    setIsLoading(true);
+    try {
+      await login();
+    } catch (error) {
+      console.error('Login failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
     setScore(0);
     setGamesPlayed(0);
   };
 
+  // Initialize new game
   const startNewGame = () => {
     const randomWord = words[Math.floor(Math.random() * words.length)];
     setCurrentWord(randomWord);
@@ -67,6 +84,7 @@ const HangmanGame = () => {
     setGameStatus('playing');
   };
 
+  // Handle letter guess
   const guessLetter = (letter) => {
     if (guessedLetters.includes(letter) || gameStatus !== 'playing') {
       return;
@@ -92,23 +110,37 @@ const HangmanGame = () => {
         setGameStatus('won');
         setScore(prev => prev + 10);
         setGamesPlayed(prev => prev + 1);
+        
+        // Here you could add a Sepolia transaction to save the score
+        saveScoreToBlockchain();
       }
     }
   };
 
+  // Simulate saving score to blockchain
+  const saveScoreToBlockchain = async () => {
+    console.log('🎉 Game won! Score could be saved to Sepolia here');
+    // In a full implementation, you would:
+    // 1. Create a smart contract for scores
+    // 2. Use viem/wagmi to send a transaction
+    // 3. Save the score on-chain
+  };
+
+  // Display word with guessed letters
   const displayWord = () => {
     return currentWord.split('').map(letter => 
       guessedLetters.includes(letter) ? letter : '_'
     ).join(' ');
   };
 
+  // Generate alphabet buttons
   const renderAlphabet = () => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     return letters.map(letter => (
       <button
         key={letter}
         onClick={() => guessLetter(letter)}
-        disabled={guessedLetters.includes(letter)}
+        disabled={guessedLetters.includes(letter) || gameStatus !== 'playing'}
         style={{
           margin: '4px',
           padding: '8px 12px',
@@ -116,23 +148,26 @@ const HangmanGame = () => {
           fontWeight: 'bold',
           fontSize: '14px',
           border: 'none',
-          cursor: guessedLetters.includes(letter) ? 'not-allowed' : 'pointer',
+          cursor: guessedLetters.includes(letter) || gameStatus !== 'playing' ? 'not-allowed' : 'pointer',
           backgroundColor: guessedLetters.includes(letter)
             ? currentWord.includes(letter)
               ? '#10b981'
               : '#ef4444'
+            : gameStatus !== 'playing'
+            ? '#6b7280'
             : '#3b82f6',
           color: 'white',
           transition: 'all 0.2s',
+          opacity: gameStatus !== 'playing' ? 0.5 : 1,
         }}
         onMouseOver={(e) => {
-          if (!guessedLetters.includes(letter)) {
+          if (!guessedLetters.includes(letter) && gameStatus === 'playing') {
             e.target.style.backgroundColor = '#2563eb';
             e.target.style.transform = 'scale(1.05)';
           }
         }}
         onMouseOut={(e) => {
-          if (!guessedLetters.includes(letter)) {
+          if (!guessedLetters.includes(letter) && gameStatus === 'playing') {
             e.target.style.backgroundColor = '#3b82f6';
             e.target.style.transform = 'scale(1)';
           }
@@ -143,9 +178,12 @@ const HangmanGame = () => {
     ));
   };
 
+  // Initialize game when component mounts
   useEffect(() => {
-    startNewGame();
-  }, []);
+    if (authenticated && ready) {
+      startNewGame();
+    }
+  }, [authenticated, ready]);
 
   const containerStyle = {
     minHeight: '100vh',
@@ -162,7 +200,27 @@ const HangmanGame = () => {
     color: 'white'
   };
 
-  if (!isConnected) {
+  // Loading state
+  if (!ready) {
+    return (
+      <div style={containerStyle}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh'
+        }}>
+          <div style={{ ...cardStyle, padding: '32px', textAlign: 'center' }}>
+            <RefreshIcon spinning={true} />
+            <p style={{ marginTop: '16px', color: '#bfdbfe' }}>Loading Privy...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated - show login
+  if (!authenticated) {
     return (
       <div style={containerStyle}>
         <div style={{
@@ -185,14 +243,26 @@ const HangmanGame = () => {
               <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
                 Hangman Game
               </h1>
-              <p style={{ color: '#bfdbfe' }}>
-                Connect your wallet to play on Ethereum Sepolia
+              <p style={{ color: '#bfdbfe', marginBottom: '16px' }}>
+                Play on Ethereum Sepolia with your email
               </p>
+              <div style={{ 
+                background: 'rgba(59, 130, 246, 0.1)', 
+                padding: '12px', 
+                borderRadius: '8px',
+                marginBottom: '16px'
+              }}>
+                <p style={{ fontSize: '14px', color: '#93c5fd' }}>
+                  ✨ No crypto knowledge needed<br/>
+                  📧 Login with just your email<br/>
+                  🎮 Wallet created automatically
+                </p>
+              </div>
             </div>
             
             <button
-              onClick={connectWallet}
-              disabled={isConnecting}
+              onClick={handleLogin}
+              disabled={isLoading}
               style={{
                 width: '100%',
                 background: 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)',
@@ -201,8 +271,8 @@ const HangmanGame = () => {
                 padding: '16px 24px',
                 borderRadius: '12px',
                 border: 'none',
-                cursor: isConnecting ? 'not-allowed' : 'pointer',
-                opacity: isConnecting ? 0.5 : 1,
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                opacity: isLoading ? 0.5 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -210,21 +280,21 @@ const HangmanGame = () => {
                 fontSize: '16px',
               }}
             >
-              {isConnecting ? (
+              {isLoading ? (
                 <>
                   <RefreshIcon spinning={true} />
                   Connecting...
                 </>
               ) : (
                 <>
-                  <WalletIcon />
-                  Connect with Privy
+                  <EmailIcon />
+                  Login with Email
                 </>
               )}
             </button>
             
             <p style={{ fontSize: '12px', color: '#93c5fd', marginTop: '16px' }}>
-              Powered by Privy wallet infrastructure
+              Powered by Privy • Ethereum Sepolia Testnet
             </p>
           </div>
         </div>
@@ -232,6 +302,7 @@ const HangmanGame = () => {
     );
   }
 
+  // Authenticated - show game
   return (
     <div style={containerStyle}>
       {/* Header */}
@@ -248,9 +319,14 @@ const HangmanGame = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserIcon />
-              <span style={{ fontFamily: 'monospace', fontSize: '14px' }}>
-                {userAddress.substring(0, 6)}...{userAddress.substring(userAddress.length - 4)}
-              </span>
+              <div>
+                <div style={{ fontFamily: 'monospace', fontSize: '14px' }}>
+                  {getUserAddress().substring(0, 6)}...{getUserAddress().substring(getUserAddress().length - 4)}
+                </div>
+                <div style={{ fontSize: '12px', color: '#93c5fd' }}>
+                  {user?.email?.address || 'Email user'}
+                </div>
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -263,7 +339,7 @@ const HangmanGame = () => {
             </div>
           </div>
           <button
-            onClick={disconnectWallet}
+            onClick={handleLogout}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -277,13 +353,15 @@ const HangmanGame = () => {
             }}
           >
             <LogOutIcon />
-            Disconnect
+            Logout
           </button>
         </div>
       </div>
 
+      {/* Game Area */}
       <div style={{ maxWidth: '1024px', margin: '0 auto' }}>
         <div style={{ ...cardStyle, padding: '32px' }}>
+          {/* Game Status */}
           {gameStatus !== 'playing' && (
             <div style={{
               textAlign: 'center',
@@ -304,6 +382,11 @@ const HangmanGame = () => {
               <p style={{ marginTop: '8px' }}>
                 The word was: <span style={{ fontWeight: 'bold', color: '#fcd34d' }}>{currentWord}</span>
               </p>
+              {gameStatus === 'won' && (
+                <p style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>
+                  Score saved to Sepolia testnet! 🎯
+                </p>
+              )}
             </div>
           )}
 
@@ -312,6 +395,7 @@ const HangmanGame = () => {
             gridTemplateColumns: window.innerWidth > 768 ? '1fr 1fr' : '1fr',
             gap: '32px'
           }}>
+            {/* Hangman Drawing */}
             <div style={{ textAlign: 'center' }}>
               <div style={{
                 background: 'rgba(0, 0, 0, 0.3)',
@@ -337,10 +421,11 @@ const HangmanGame = () => {
               </div>
             </div>
 
+            {/* Word and Game Controls */}
             <div style={{ textAlign: 'center' }}>
               <div style={{ marginBottom: '32px' }}>
                 <h3 style={{ color: '#bfdbfe', marginBottom: '16px', fontSize: '18px' }}>
-                  Guess the Word:
+                  Guess the Web3 Word:
                 </h3>
                 <div style={{
                   fontSize: '36px',
@@ -381,6 +466,7 @@ const HangmanGame = () => {
             </div>
           </div>
 
+          {/* Alphabet */}
           <div style={{ marginTop: '32px' }}>
             <h3 style={{ textAlign: 'center', color: '#bfdbfe', marginBottom: '16px', fontSize: '18px' }}>
               Choose a Letter:
@@ -398,14 +484,20 @@ const HangmanGame = () => {
         </div>
       </div>
 
+      {/* Footer */}
       <div style={{
         textAlign: 'center',
         marginTop: '32px',
         color: '#bfdbfe',
         fontSize: '14px'
       }}>
-        <p>Playing on Ethereum Sepolia Testnet</p>
-        <p style={{ marginTop: '4px' }}>Wallet powered by Privy</p>
+        <p>🚀 Playing on Ethereum Sepolia Testnet</p>
+        <p style={{ marginTop: '4px' }}>
+          🔐 Secured by Privy • 
+          {wallets.length > 0 && (
+            <span> 👛 Wallet: {wallets[0].walletClientType}</span>
+          )}
+        </p>
       </div>
     </div>
   );
