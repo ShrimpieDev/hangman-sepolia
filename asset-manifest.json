@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/hangman-sepolia/static/js/main.2306e352.js",
+    "index.html": "/hangman-sepolia/index.html",
+    "main.2306e352.js.map": "/hangman-sepolia/static/js/main.2306e352.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.2306e352.js"
+  ]
+}
