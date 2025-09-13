@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { useContractRead } from 'wagmi';
 
 // Contract ABI for leaderboard functions
 const HANGMAN_ABI = [

@@ -2,19 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { PrivyProvider } from '@privy-io/react-auth';
-import { WagmiConfig } from 'wagmi';
-import { sepolia } from 'wagmi/chains';
-import { configureChains, createConfig } from 'wagmi';
-import { publicProvider } from 'wagmi/providers/public';
-import { PrivyWagmiConnector } from '@privy-io/wagmi-connector';
-
-const configureChainsConfig = configureChains([sepolia], [publicProvider()]);
-
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors: [new PrivyWagmiConnector({ chains: configureChainsConfig.chains })],
-  ...configureChainsConfig,
-});
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -31,18 +18,30 @@ root.render(
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
-        defaultChain: sepolia,
-        supportedChains: [sepolia],
-        fundingMethodConfig: {
-          moonpay: {
-            useSandbox: true,
+        defaultChain: {
+          id: 11155111,
+          name: 'Sepolia',
+          network: 'sepolia',
+          nativeCurrency: {
+            decimals: 18,
+            name: 'Ethereum',
+            symbol: 'ETH',
+          },
+          rpcUrls: {
+            default: {
+              http: ['https://ethereum-sepolia.publicnode.com'],
+            },
+            public: {
+              http: ['https://ethereum-sepolia.publicnode.com'],
+            },
+          },
+          blockExplorers: {
+            default: { name: 'Etherscan', url: 'https://sepolia.etherscan.io' },
           },
         },
       }}
     >
-      <WagmiConfig config={wagmiConfig}>
-        <App />
-      </WagmiConfig>
+      <App />
     </PrivyProvider>
   </React.StrictMode>
 );

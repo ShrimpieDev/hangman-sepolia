@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useContractWrite, useContractRead, useWaitForTransaction } from 'wagmi';
-import { parseEther } from 'viem';
 
 // Contract ABI (simplified for key functions)
 const HANGMAN_ABI = [
@@ -122,18 +120,6 @@ const OnChainHangman = () => {
   };
 
   // Contract write hooks
-  const { write: startGame, data: startGameData, isLoading: isStartingGame } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: HANGMAN_ABI,
-    functionName: 'startNewGame',
-  });
-
-  const { write: guessLetter, data: guessData, isLoading: isGuessingLetter } = useContractWrite({
-    address: CONTRACT_ADDRESS,
-    abi: HANGMAN_ABI,
-    functionName: 'guessLetter',
-  });
-
   // Wait for transaction confirmations
   const { isLoading: isStartTxLoading, isSuccess: isStartTxSuccess } = useWaitForTransaction({
     hash: startGameData?.hash,
