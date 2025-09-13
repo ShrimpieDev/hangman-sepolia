@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkhangman_sepolia=self.webpackChunkhangman_sepolia||[]).push([[2432],{2432:(n,e,a)=>{a.r(e),a.d(e,{offSvg:()=>s});var l,o=a(7528);const s=(0,a(7022).JW)(l||(l=(0,o.A)(['<svg fill="none" viewBox="0 0 16 16">\n  <path\n    fill="currentColor"\n    fill-rule="evenodd"\n    d="M8 0a1 1 0 0 1 1 1v5.38a1 1 0 0 1-2 0V1a1 1 0 0 1 1-1ZM5.26 2.6a1 1 0 0 1-.28 1.39 5.46 5.46 0 1 0 6.04 0 1 1 0 1 1 1.1-1.67 7.46 7.46 0 1 1-8.25 0 1 1 0 0 1 1.4.28Z"\n    clip-rule="evenodd"\n  />\n</svg>'])))}}]);
+//# sourceMappingURL=2432.b881bbfa.chunk.js.map
